@@ -42,3 +42,18 @@ export const createUser = (req, res) => {
   })
 }
 
+export const verifyUser = (req, res) => {
+  const { body } = req
+
+  pool.query(`
+    select * from users where user = "${body.user}"
+  `)
+  .then((data) => {
+    const info = data[0]
+    res.json({
+      data: info
+    })
+  })
+
+}
+
