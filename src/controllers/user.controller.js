@@ -36,23 +36,29 @@ export const createUser = (req, res) => {
     })
   })
   .catch(error => {
-    console.log('Error al crear', error);
-
     errorHandler(res, 404, "Error al crear el usuario", error)
   })
 }
 
 export const verifyUser = (req, res) => {
   const { body } = req
-
   pool.query(`
-    select * from users where user = "${body.user}"
+    select *
+    from users
+    where email = "${body.email}" and password = "${body.password}"
   `)
   .then((data) => {
-    const info = data[0]
-    res.json({
-      data: info
-    })
+    const infoUser = data[0]
+    if (infoUser.length) {
+      res.json({
+        token: btoa(infoUser[0].email)
+      })
+    } else {
+      errorHandler(res, 404, "Verifica los datos de ingreso.", e)
+    }
+  })
+  .catch((e) => {
+    errorHandler(res, 404, "Verifica los datos de ingreso.", e)
   })
 
 }

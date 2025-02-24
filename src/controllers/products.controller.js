@@ -7,6 +7,8 @@ export const getAll = (req, res) => {
   .then((data) => {
     const info = data[0]
     res.json({
+      status: 0,
+      message: '',
       data: info
     })
   })

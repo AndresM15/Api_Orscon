@@ -1,4 +1,4 @@
-create schema 'api_general' utf8;
+create schema api_general;
 use api_general;
 SET time_zone = '-05:00';
 
