@@ -3,7 +3,7 @@ insert into states (id_state, description) values
 (2, 'Inactivo'),
 (3, 'Suspendido');
 
-insert into users (fullname, user, email, password, states_id)
+insert into users (fullname, user, email, password, state_id)
 values
 ('John Doe', 'johndoe', 'johndoe@example.com', 'password123', 1),
 ('Jane Smith', 'janesmith', 'janesmith@example.com', 'password456', 1),
@@ -11,14 +11,14 @@ values
 ('Emily Davis', 'emilydavis', 'emilydavis@example.com', 'password111', 1),
 ('David Lee', 'davidlee', 'davidlee@example.com', 'password222', 1);
 
-insert into categories (id_category, title, state_id)
+insert into categories (id_category, title, state_id, slug)
 values
-(1, 'Peliculas', 1),
-(2, 'Pokémons', 1),
-(3, 'Video Juegos', 1);
+(1, 'Peliculas', 1, 'TV'),
+(2, 'Pokémons', 1, 'PK'),
+(3, 'Video Juegos', 1, 'VG');
 
 -- Insertar 20 registros relacionados con películas
-INSERT INTO items (title, description, score, slug, states_id, category_id)
+INSERT INTO items (title, description, score, slug, state_id, category_id)
 VALUES
 ('The Shawshank Redemption', 'Two imprisoned men bond over a number of years, finding solace and eventual redemption through acts of common decency.', 97, 'the_shawshank_redemption', 1, 1),
 ('The Godfather', 'The aging patriarch of an organized crime dynasty transfers control of his clandestine empire to his reluctant son.', 98, 'the_godfather', 1, 1),
@@ -113,3 +113,5 @@ VALUES
 ('Wi-Fi Router', 120.00, 'Dual-band Wi-Fi router with gigabit Ethernet', 50, 1),
 ('Electric Toothbrush', 75.00, 'Rechargeable electric toothbrush with multiple modes', 90, 1),
 ('Coffee Maker', 99.99, 'Automatic coffee maker with programmable settings', 80, 1);
+
+
