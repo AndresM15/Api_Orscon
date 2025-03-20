@@ -23,7 +23,6 @@ export const getUserById = (req, res) => {
 export const createUser = (req, res) => {
   const { body } = req
   const { name, email, user, password } = body
-
   pool.query(`
     insert into users (fullname, user, email, password, state_id)
     values
