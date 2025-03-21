@@ -39,6 +39,30 @@ export const createUser = (req, res) => {
   })
 }
 
+export const updateUser = ({ body }, res) => {
+  const { user } = body
+  const { id_user, name, email, userName, password } = user
+  pool.query(`
+    update users
+    set
+      fullname = '${name}',
+      email = '${email}',
+      user = '${userName}',
+      password = '${password}'
+    where id_user = ${id_user}
+  `)
+  .then((data) => {
+    const info = data[0]
+    res.json({
+      data: info
+    })
+  })
+  .catch(error => {
+    errorHandler(res, 404, "Error al actualizar el usuario", error)
+  })
+
+}
+
 export const verifyUser = (req, res) => {
   const { body } = req
   pool.query(`

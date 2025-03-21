@@ -3,4 +3,6 @@ export const verifyToken = (req, res) => {
 
   console.log('header back', authHeader);
 
+  res.send('Finalizando servicio')
+
 }
