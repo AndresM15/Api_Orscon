@@ -74,7 +74,7 @@ export const verifyUser = (req, res) => {
     const infoUser = data[0]
     if (infoUser.length) {
       res.json({
-        token: btoa(infoUser[0].email)
+        token: 'En construccion'
       })
     } else {
       errorHandler(res, 404, "Verifica los datos de ingreso.", e)
