@@ -1,6 +1,7 @@
 import "dotenv/config"
 import mysql2 from "mysql2/promise"
 
+
 const username = process.env.DB_USER
 const database = process.env.DB_NAME
 const password = process.env.DB_PASS
