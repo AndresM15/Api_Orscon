@@ -72,6 +72,8 @@ export const verifyUser = (req, res) => {
   `)
   .then((data) => {
     const infoUser = data[0]
+    const { id_user, fullname, user, email, state_id, profile_id } = infoUser[0]
+    
     if (infoUser.length) {
       res.json({
         token: 'En construccion'
