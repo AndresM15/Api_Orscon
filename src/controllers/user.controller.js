@@ -1,6 +1,6 @@
 import { pool } from "../libs/db.js";
-
 import { errorHandler } from "../helpers/errorHandler.js";
+import jwt from 'jsonwebtoken';
 
 export const getUserById = (req, res) => {
   const { id_user } = req.params
@@ -22,11 +22,11 @@ export const getUserById = (req, res) => {
 
 export const createUser = (req, res) => {
   const { body } = req
-  const { name, email, user, password } = body
+  const { fullname, email, user, password, profile_id = "user" } = body
   pool.query(`
-    insert into users (fullname, user, email, password, state_id)
-    values
-    ("${name}", "${user}", "${email}", "${password}", 1)
+    insert into users (fullname, user, email, password, state_id, profile_id)
+    rvalues ("${fullname}", "${user}", "${email}", "${password}", "user", ${profile_id})
+
   `)
   .then((data) => {
     const info = data[0]
@@ -41,11 +41,11 @@ export const createUser = (req, res) => {
 
 export const updateUser = ({ body }, res) => {
   const { user } = body
-  const { id_user, name, email, userName, password } = user
+  const { id_user, fullname, email, userName, password } = user
   pool.query(`
     update users
     set
-      fullname = '${name}',
+      fullname = '${fullname}',
       email = '${email}',
       user = '${userName}',
       password = '${password}'
@@ -64,26 +64,53 @@ export const updateUser = ({ body }, res) => {
 }
 
 export const verifyUser = (req, res) => {
-  const { body } = req
-  pool.query(`
-    select *
-    from users
-    where email = "${body.email}" and password = "${body.password}"
-  `)
-  .then((data) => {
-    const infoUser = data[0]
-    const { id_user, fullname, user, email, state_id, profile_id } = infoUser[0]
-    
-    if (infoUser.length) {
-      res.json({
-        token: 'En construccion'
-      })
-    } else {
-      errorHandler(res, 404, "Verifica los datos de ingreso.", e)
-    }
-  })
-  .catch((e) => {
-    errorHandler(res, 404, "Verifica los datos de ingreso.", e)
-  })
+  const { email, password } = req.body;
 
-}
+  pool.query(`
+    SELECT * FROM users WHERE email = "${email}" AND password = "${password}"
+  `)
+  .then(([users]) => {
+    if (!users.length) {
+      return res.status(401).json({ message: "Usuario o contraseña incorrectos" });
+    }
+
+    const user = users[0];
+
+    const token = jwt.sign(
+      { id_user: user.id_user },
+      process.env.ACCESS_TOKEN_SECRET,
+      { expiresIn: "1h" }
+    );
+
+    res.json({
+      token,
+      user: {
+        id_user: user.id_user,
+        fullname: user.fullname,
+        email: user.email
+      }
+    });
+  })
+  .catch((error) => {
+    console.error("Error al verificar el usuario:", error);
+    res.status(500).json({ message: "Error interno del servidor" });
+  });
+};
+
+
+
+export const getUserProfile = (req, res) => {
+  const { id_user } = req.user;
+
+  pool.query(`SELECT id_user, fullname, email, user FROM users WHERE id_user = ?`, [id_user])
+    .then(([rows]) => {
+      if (rows.length > 0) {
+        res.json(rows[0]);
+      } else {
+        res.status(404).json({ message: "Usuario no encontrado" });
+      }
+    })
+    .catch(error => {
+      res.status(500).json({ message: "Error al obtener el perfil", error });
+    });
+};
