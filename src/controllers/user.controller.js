@@ -1,6 +1,8 @@
 import { pool } from "../libs/db.js";
 import { errorHandler } from "../helpers/errorHandler.js";
 import jwt from 'jsonwebtoken';
+import { sendRecoveryEmail } from '../helpers/emailHelper.js';
+
 
 export const getUserById = (req, res) => {
   const { id_user } = req.params
@@ -21,24 +23,27 @@ export const getUserById = (req, res) => {
 }
 
 export const createUser = (req, res) => {
-  const { body } = req
-  const { fullname, email, user, password, profile_id = "user" } = body
-  pool.query(`
-    insert into users (fullname, user, email, password, state_id, profile_id)
-    rvalues ("${fullname}", "${user}", "${email}", "${password}", "user", ${profile_id})
+  const { fullname, email, user, password, profile_id = 2 } = req.body;
+  const state_id = 1;
 
-  `)
-  .then((data) => {
-    const info = data[0]
-    res.json({
-      data: info
+  const query = `
+    INSERT INTO users (fullname, user, email, password, state_id, profile_id)
+    VALUES (?, ?, ?, ?, ?, ?)
+  `;
+
+  const values = [fullname, user, email, password, state_id, profile_id];
+
+  pool.query(query, values)
+    .then((data) => {
+      res.json({
+        message: "Usuario creado exitosamente",
+        data: data[0]
+      });
     })
-  })
-  .catch(error => {
-    errorHandler(res, 404, "Error al crear el usuario", error)
-  })
-}
-
+    .catch(error => {
+      errorHandler(res, 404, "Error al crear el usuario", error);
+    });
+};
 export const updateUser = ({ body }, res) => {
   const { user } = body
   const { id_user, fullname, email, userName, password } = user
@@ -113,4 +118,62 @@ export const getUserProfile = (req, res) => {
     .catch(error => {
       res.status(500).json({ message: "Error al obtener el perfil", error });
     });
+};
+
+export const recoverPassword = async (req, res) => {
+  const { email } = req.body;
+
+  if (!email) return res.status(400).json({ message: 'El correo es obligatorio.' });
+
+  try {
+    // Buscar al usuario por email
+    const [result] = await pool.query(`SELECT id_user FROM users WHERE email = ?`, [email]);
+
+    if (!result.length) {
+      return res.status(404).json({ message: 'Correo no registrado.' });
+    }
+
+    const userId = result[0].id_user;
+
+    // Generar token de recuperación válido por 15 minutos
+    const token = jwt.sign({ id_user: userId }, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '15m' });
+
+    // Link para restablecer la contraseña (esto depende de tu frontend)
+    const resetLink = `http://127.0.0.1:5501/login/reset-password.html?token=${token}`;
+
+    // Enviar correo
+    await sendRecoveryEmail(email, resetLink);
+
+    return res.status(200).json({ message: 'Correo de recuperación enviado.' });
+
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ message: 'Error al enviar correo de recuperación.' });
+  }
+};
+
+export const resetPassword = async (req, res) => {
+  const { token, newPassword } = req.body;
+
+  if (!token || !newPassword) {
+    return res.status(400).json({ message: 'Token y nueva contraseña son obligatorios.' });
+  }
+
+  try {
+    const decoded = jwt.verify(token, process.env.ACCESS_TOKEN_SECRET);
+    const userId = decoded.id_user;
+
+    const query = `UPDATE users SET password = ? WHERE id_user = ?`;
+    await pool.query(query, [newPassword, userId]);
+
+    res.json({ message: 'Contraseña actualizada correctamente.' });
+  } catch (error) {
+    console.error('Error al restablecer la contraseña:', error);
+
+    if (error.name === 'TokenExpiredError') {
+      return res.status(401).json({ message: 'El enlace ha expirado. Solicita uno nuevo.' });
+    }
+
+    return res.status(401).json({ message: 'Token inválido o caducado.' });
+  }
 };
