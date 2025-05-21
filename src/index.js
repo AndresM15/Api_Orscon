@@ -26,7 +26,7 @@ app.use(cors(options))
 
 validateConnection()
 routerApi(app)
-
+app.use('/api/v1/user', userRouter);
 app.listen(port, HOST, () => console.log(`Server is running on port ${port}`));
 
 app.on("error", (err) => {

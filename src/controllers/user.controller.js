@@ -82,7 +82,10 @@ export const verifyUser = (req, res) => {
     const user = users[0];
 
     const token = jwt.sign(
-      { id_user: user.id_user },
+      { 
+        id_user: user.id_user, 
+        profile_id: user.profile_id 
+      },
       process.env.ACCESS_TOKEN_SECRET,
       { expiresIn: "1h" }
     );
@@ -92,7 +95,8 @@ export const verifyUser = (req, res) => {
       user: {
         id_user: user.id_user,
         fullname: user.fullname,
-        email: user.email
+        email: user.email,
+        profile_id: user.profile_id
       }
     });
   })
@@ -175,5 +179,62 @@ export const resetPassword = async (req, res) => {
     }
 
     return res.status(401).json({ message: 'Token inválido o caducado.' });
+  }
+};
+
+export const sendCoupon = async (req, res) => {
+  const { email } = req.body;
+
+  if (!email) return res.status(400).json({ message: 'El correo es obligatorio.' });
+
+  try {
+    // Generar un cupón aleatorio de 5 caracteres
+    const coupon = Math.random().toString(36).substring(2, 7).toUpperCase();
+
+    // Opcional: guardar en DB si deseas
+    // await pool.query(`INSERT INTO promo_emails (email, coupon) VALUES (?, ?)`, [email, coupon]);
+
+    // Enviar el correo
+    await sendRecoveryEmail(email, null, coupon); // Usamos la misma función pero para cupón
+
+    res.status(200).json({ message: 'Cupón enviado al correo.' });
+  } catch (error) {
+    console.error("Error al enviar cupón:", error);
+    res.status(500).json({ message: 'Error al enviar el cupón.' });
+  }
+};
+
+export const getAllUsers = async (req, res) => {
+  try {
+    const [users] = await pool.query('SELECT id_user, fullname, email, user, state_id, profile_id FROM users');
+    res.json({ users });
+  } catch (error) {
+    errorHandler(res, 500, "Error al obtener la lista de usuarios", error);
+  }
+};
+
+// En user.controller.js
+export const updateUserByAdmin = async (req, res) => {
+  const { id_user, fullname, email, user, state_id } = req.body;
+
+  try {
+    await pool.query(
+      'UPDATE users SET fullname = ?, email = ?, user = ?, state_id = ? WHERE id_user = ?',
+      [fullname, email, user, state_id, id_user]
+    );
+    res.json({ message: 'Usuario actualizado correctamente.' });
+  } catch (error) {
+    errorHandler(res, 500, "Error al actualizar el usuario", error);
+  }
+};
+
+export const deleteUser = async (req, res) => {
+  const { id_user } = req.params;
+
+  try {
+    await pool.query('DELETE FROM users WHERE id_user = ?', [id_user]);
+    res.json({ message: 'Usuario eliminado correctamente.' });
+  } catch (error) {
+    errorHandler(res, 500, "Error al eliminar el usuario", error);
   }
 };

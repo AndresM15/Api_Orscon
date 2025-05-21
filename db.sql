@@ -2,106 +2,126 @@ create schema api_general;
 use api_general;
 SET time_zone = '-05:00';
 
-create table states (
-  id_state int primary key,
-  description varchar(50) NOT NULL
-);
---users
-create table users (
-  id_user int primary key auto_increment,
-  fullname varchar(200) NOT NULL,
-  user varchar(200) NOT NULL,
-  email varchar(100) UNIQUE NOT NULL,
-  password varchar(255) NOT NULL,
-  state_id int,
-  foreign key (state_id) references states(id_state)
+-- Tabla de estados generales (activo, inactivo, eliminado)
+CREATE TABLE states (
+  id_state INT PRIMARY KEY,
+  description VARCHAR(50) NOT NULL
 );
 
-CREATE DATABASE IF NOT EXISTS tienda_online;
-USE tienda_online;
-
---Usuario
-CREATE TABLE Usuario (
-    id_usuario INT AUTO_INCREMENT PRIMARY KEY,
-    nombre VARCHAR(50),
-    apellido VARCHAR(50),
-    correo_electronico VARCHAR(100) UNIQUE,
-    contrasena VARCHAR(255),
-    telefono VARCHAR(20),
-    direccion TEXT,
-    fecha_registro DATETIME DEFAULT CURRENT_TIMESTAMP,
-    tipo_usuario ENUM('cliente', 'administrador') DEFAULT 'cliente'
+-- Tabla de perfiles de usuario (cliente, administrador, etc.)
+CREATE TABLE profiles (
+  id_profile VARCHAR(30) PRIMARY KEY,
+  description VARCHAR(100) NOT NULL
 );
 
---Categoria
-CREATE TABLE Categoria (
-    id_categoria INT AUTO_INCREMENT PRIMARY KEY,
-    nombre_categoria VARCHAR(50),
-    descripcion TEXT
+-- Usuarios del sistema
+CREATE TABLE users (
+  id_user INT PRIMARY KEY AUTO_INCREMENT,
+  fullname VARCHAR(200) NOT NULL,
+  user VARCHAR(200) NOT NULL,
+  email VARCHAR(100) UNIQUE NOT NULL,
+  password VARCHAR(255) NOT NULL,
+  state_id INT,
+  profile_id VARCHAR(30) NOT NULL,
+  FOREIGN KEY (state_id) REFERENCES states(id_state),
+  FOREIGN KEY (profile_id) REFERENCES profiles(id_profile)
 );
 
---Producto
-CREATE TABLE Producto (
-    id_producto INT AUTO_INCREMENT PRIMARY KEY,
-    nombre VARCHAR(100),
-    descripcion TEXT,
-    precio DECIMAL(10, 2),
-    stock INT,
-    categoria INT,
-    imagen_url VARCHAR(255),
-    fecha_agregado DATETIME DEFAULT CURRENT_TIMESTAMP,
-    activo BOOLEAN DEFAULT TRUE,
-    FOREIGN KEY (categoria) REFERENCES Categoria(id_categoria)
+-- Productos disponibles en la tienda
+CREATE TABLE products (
+  id_product INT PRIMARY KEY AUTO_INCREMENT,
+  name VARCHAR(200) NOT NULL,
+  description TEXT,
+  price DECIMAL(10,2) NOT NULL,
+  stock INT NOT NULL,
+  image_url VARCHAR(500),
+  category VARCHAR(100),
+  state_id INT,
+  FOREIGN KEY (state_id) REFERENCES states(id_state)
 );
 
--- Carrito
-CREATE TABLE Carrito (
-    id_carrito INT AUTO_INCREMENT PRIMARY KEY,
-    id_usuario INT,
-    fecha_creacion DATETIME DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (id_usuario) REFERENCES Usuario(id_usuario)
+-- Ítems del carrito (productos agregados pero no comprados aún)
+CREATE TABLE cart_items (
+  id_cart_item INT PRIMARY KEY AUTO_INCREMENT,
+  user_id INT,
+  product_id INT,
+  quantity INT NOT NULL,
+  FOREIGN KEY (user_id) REFERENCES users(id_user),
+  FOREIGN KEY (product_id) REFERENCES products(id_product)
 );
 
--- Carrito_Producto
-CREATE TABLE Carrito_Producto (
-    id_carrito_producto INT AUTO_INCREMENT PRIMARY KEY,
-    id_carrito INT,
-    id_producto INT,
-    cantidad INT,
-    FOREIGN KEY (id_carrito) REFERENCES Carrito(id_carrito),
-    FOREIGN KEY (id_producto) REFERENCES Producto(id_producto)
+-- Direcciones de envío asociadas a un usuario
+CREATE TABLE addresses (
+  id_address INT PRIMARY KEY AUTO_INCREMENT,
+  user_id INT,
+  address_line VARCHAR(255),
+  city VARCHAR(100),
+  state VARCHAR(100),
+  country VARCHAR(100),
+  postal_code VARCHAR(20),
+  is_default BOOLEAN DEFAULT FALSE,
+  FOREIGN KEY (user_id) REFERENCES users(id_user)
 );
 
--- Pedido
-CREATE TABLE Pedido (
-    id_pedido INT AUTO_INCREMENT PRIMARY KEY,
-    id_usuario INT,
-    fecha_pedido DATETIME DEFAULT CURRENT_TIMESTAMP,
-    total DECIMAL(10, 2),
-    estado ENUM('pendiente', 'enviado', 'entregado', 'cancelado') DEFAULT 'pendiente',
-    metodo_pago VARCHAR(50),
-    direccion_entrega TEXT,
-    FOREIGN KEY (id_usuario) REFERENCES Usuario(id_usuario)
+-- Pedidos realizados por los usuarios
+CREATE TABLE orders (
+  id_order INT PRIMARY KEY AUTO_INCREMENT,
+  user_id INT,
+  order_date DATETIME DEFAULT CURRENT_TIMESTAMP,
+  total_amount DECIMAL(10,2),
+  status VARCHAR(50),
+  shipping_address_id INT,
+  FOREIGN KEY (user_id) REFERENCES users(id_user),
+  FOREIGN KEY (shipping_address_id) REFERENCES addresses(id_address)
 );
 
--- Detalle_Pedido
-CREATE TABLE Detalle_Pedido (
-    id_detalle INT AUTO_INCREMENT PRIMARY KEY,
-    id_pedido INT,
-    id_producto INT,
-    cantidad INT,
-    precio_unitario DECIMAL(10, 2),
-    FOREIGN KEY (id_pedido) REFERENCES Pedido(id_pedido),
-    FOREIGN KEY (id_producto) REFERENCES Producto(id_producto)
+-- Productos incluidos en un pedido
+CREATE TABLE order_items (
+  id_order_item INT PRIMARY KEY AUTO_INCREMENT,
+  order_id INT,
+  product_id INT,
+  quantity INT,
+  unit_price DECIMAL(10,2),
+  FOREIGN KEY (order_id) REFERENCES orders(id_order),
+  FOREIGN KEY (product_id) REFERENCES products(id_product)
 );
 
---Pago 
-CREATE TABLE Pago (
-    id_pago INT AUTO_INCREMENT PRIMARY KEY,
-    id_pedido INT,
-    fecha_pago DATETIME DEFAULT CURRENT_TIMESTAMP,
-    monto DECIMAL(10, 2),
-    metodo_pago VARCHAR(50),
-    estado_pago ENUM('pendiente', 'completado', 'fallido') DEFAULT 'pendiente',
-    FOREIGN KEY (id_pedido) REFERENCES Pedido(id_pedido)
+-- Reseñas y calificaciones de productos
+CREATE TABLE reviews (
+  id_review INT PRIMARY KEY AUTO_INCREMENT,
+  user_id INT,
+  product_id INT,
+  rating INT CHECK (rating BETWEEN 1 AND 5),
+  comment TEXT,
+  approved BOOLEAN DEFAULT FALSE,
+  review_date DATETIME DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (user_id) REFERENCES users(id_user),
+  FOREIGN KEY (product_id) REFERENCES products(id_product)
+);
+
+-- Lista de deseos de cada usuario
+CREATE TABLE wishlist (
+  id_wishlist INT PRIMARY KEY AUTO_INCREMENT,
+  user_id INT,
+  product_id INT,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (user_id) REFERENCES users(id_user),
+  FOREIGN KEY (product_id) REFERENCES products(id_product)
+);
+
+-- Cupones de descuento generados por administradores
+CREATE TABLE coupons (
+  id_coupon INT PRIMARY KEY AUTO_INCREMENT,
+  code VARCHAR(50) UNIQUE NOT NULL,
+  discount_percentage INT CHECK (discount_percentage BETWEEN 0 AND 100),
+  valid_until DATE
+);
+
+-- Cupones aplicados por los usuarios en sus compras
+CREATE TABLE applied_coupons (
+  id_applied_coupon INT PRIMARY KEY AUTO_INCREMENT,
+  order_id INT,
+  coupon_id INT,
+  FOREIGN KEY (order_id) REFERENCES orders(id_order),
+  FOREIGN KEY (coupon_id) REFERENCES coupons(id_coupon)
 );
