@@ -6,6 +6,7 @@ import categoriesRouter from "./category.router.js"
 import userRouter from "./user.router.js"
 import fileRouter from "./files.router.js"
 import meRouter from './me.router.js'
+import orderRouter from './order.router.js'
 
 export const routerApi = (app) => {
   const router = express.Router()
@@ -18,5 +19,6 @@ export const routerApi = (app) => {
   router.use('/products', productRouter)
   router.use('/user', userRouter)
   router.use('/files', fileRouter)
+  router.use('/orders', orderRouter)
 
 }

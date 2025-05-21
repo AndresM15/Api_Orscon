@@ -25,3 +25,39 @@ export async function sendRecoveryEmail(to, link = null, coupon = null) {
   };
   await transporter.sendMail(mailOptions);
 }
+
+export const sendOrderConfirmationEmail = async ({ email, orderId, productName, quantity, total }) => {
+  const transporter = nodemailer.createTransport({
+    host: process.env.EMAIL_HOST,
+    port: process.env.EMAIL_PORT,
+    secure: true,
+    auth: {
+      user: process.env.EMAIL_USER,
+      pass: process.env.EMAIL_PASSWORD
+    }
+  });
+
+  const mailOptions = {
+    from: process.env.EMAIL_USER,
+    to: email,
+    subject: 'Confirmación de Orden - Orscon',
+    html: `
+      <h1>¡Gracias por tu compra!</h1>
+      <p>Tu orden #${orderId} ha sido procesada exitosamente.</p>
+      <h2>Detalles de la orden:</h2>
+      <ul>
+        <li>Producto: ${productName}</li>
+        <li>Cantidad: ${quantity}</li>
+        <li>Total: $${total}</li>
+      </ul>
+      <p>Te mantendremos informado sobre el estado de tu envío.</p>
+    `
+  };
+
+  try {
+    await transporter.sendMail(mailOptions);
+  } catch (error) {
+    console.error('Error al enviar correo de confirmación:', error);
+    throw error;
+  }
+};
